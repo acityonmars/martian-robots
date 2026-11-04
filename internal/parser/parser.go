@@ -3,10 +3,11 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
-	"github.com/acityonmars/martian-robots/internal/mars"
+	"github.com/acityonmars/martian-robots/internal/engine"
 )
 
 type robotFieldValue int
@@ -17,10 +18,17 @@ const (
 	RobotOrientation
 )
 
+// maxCoordinate is the possible maximum coordinate.
+const maxCoordinate int = 50
+
+// minInputLineCnt is the minimum number of lines for input data. i.e. 1 line of world coordinate + 2 lines for a robot and instructions
 const minInputLineCnt int = 3
 
-// TODO: document - inputdata must have an odd number of lines
-func ParseInputData(inputData []string) (*mars.Position, *mars.Mission, error) {
+// maxInstructionCnt is the maximum number of instructions letters.
+const maxInstructionCnt int = 100
+
+// ParseInputData parses input data in a string slice, and returns mars.World and mars.Mission.
+func ParseInputData(inputData []string, logger *slog.Logger) (*engine.World, *engine.Mission, error) {
 	inputDataLineCnt := len(inputData)
 	if inputDataLineCnt < minInputLineCnt || inputDataLineCnt%2 == 0 {
 		return nil, nil, fmt.Errorf("invalid input data with incorrect line cnt: %d", inputDataLineCnt)
@@ -31,35 +39,43 @@ func ParseInputData(inputData []string) (*mars.Position, *mars.Mission, error) {
 		return nil, nil, fmt.Errorf("failed to parse world coordinate: %w", err)
 	}
 
-	mission, err := parseMission(inputData[1:])
+	world := engine.NewWorld(*upperRightPos, logger)
+
+	mission, err := parseMission(inputData[1:], world)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse mission data: %w", err)
 	}
 
-	return &upperRightPos, mission, nil
+	return world, mission, nil
 }
 
-func parseWorldCoordinate(coordinate string) (mars.Position, error) {
+func parseWorldCoordinate(coordinate string) (*engine.Position, error) {
 	fields := strings.Fields(coordinate)
-	if len(fields) != 2 {
-		panic("there must be two numbers")
+	fieldCnt := len(fields)
+	if fieldCnt != 2 {
+		return nil, fmt.Errorf("expected two fields for coordinate but got %d", fieldCnt)
 	}
 
 	tmpPositions := make([]int, 2)
 	for i, field := range fields {
 		num, err := parseNumString(field)
 		if err != nil {
-			panic("")
+			return nil, fmt.Errorf("failed to parse a field to number: %w", err)
 		}
+
+		if num > maxCoordinate {
+			return nil, fmt.Errorf("exceeded maximum coordinate: %d", num)
+		}
+
 		tmpPositions[i] = num
 	}
 
-	upperRightPos := mars.Position{
+	upperRightPos := engine.Position{
 		X: tmpPositions[0],
 		Y: tmpPositions[1],
 	}
 
-	return upperRightPos, nil
+	return &upperRightPos, nil
 }
 
 func parseNumString(strNum string) (int, error) {
@@ -79,14 +95,14 @@ func parseNumString(strNum string) (int, error) {
 //	RFRFRFRF
 //	3 2 N
 //	FRRFLLFFRRFLL
-func parseMission(missionRawData []string) (*mars.Mission, error) {
+func parseMission(missionRawData []string, world *engine.World) (*engine.Mission, error) {
 	missionLineCnt := len(missionRawData)
 	if missionLineCnt%2 != 0 {
 		return nil, fmt.Errorf("incorrect line number for raw mission data: %d", missionLineCnt)
 	}
 
-	mission := mars.Mission{}
-	robotPlan := mars.RobotPlan{}
+	mission := engine.Mission{}
+	robotPlan := engine.RobotPlan{}
 	for i, line := range missionRawData {
 		// Odd line is for robot input. (e.g. "1 1 E")
 		if i%2 == 0 {
@@ -94,8 +110,9 @@ func parseMission(missionRawData []string) (*mars.Mission, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse robot info: %w", err)
 			}
-			robot.ID = i
-			robotPlan.Robot = *robot
+			robot.ID = i / 2
+			robotPlan.Robot = robot
+			robotPlan.World = world
 		} else {
 			// Even line is for the commands for the robot. (e.g. "RFRFRF")
 			commands, err := parseCommands(line)
@@ -110,7 +127,7 @@ func parseMission(missionRawData []string) (*mars.Mission, error) {
 	return &mission, nil
 }
 
-func parseRobot(rawRobotInfo string) (*mars.Robot, error) {
+func parseRobot(rawRobotInfo string) (*engine.Robot, error) {
 	fields := strings.Fields(rawRobotInfo)
 	fieldsCnt := len(fields)
 	if fieldsCnt != 3 {
@@ -131,39 +148,43 @@ func parseRobot(rawRobotInfo string) (*mars.Robot, error) {
 		return nil, fmt.Errorf("failed to parse orientation for robot: %w", err)
 	}
 
-	robot := mars.Robot{
-		Position: mars.Position{X: x, Y: y}, Orientation: orientation,
+	robot := engine.Robot{
+		Pos: engine.Position{X: x, Y: y}, Ori: orientation,
 	}
 
 	return &robot, nil
 }
 
 // parseOrientation parses raw input orientation such as "N" to an Orientation.
-func parseOrientation(rawInput string) (mars.Orientation, error) {
+func parseOrientation(rawInput string) (engine.Orientation, error) {
 	switch rawInput {
 	case "N":
-		return mars.North, nil
+		return engine.North, nil
 	case "E":
-		return mars.East, nil
+		return engine.East, nil
 	case "S":
-		return mars.South, nil
+		return engine.South, nil
 	case "W":
-		return mars.West, nil
+		return engine.West, nil
 	default:
 		return 0, fmt.Errorf("invalid orientation: %q", rawInput)
 	}
 }
 
 // parseCommands parses raw input commands such as "RFRFRFRF" to a mars.Command slice.
-func parseCommands(rawInput string) (*[]mars.Command, error) {
+func parseCommands(rawInput string) (*[]engine.Command, error) {
 	trimmedInput := strings.TrimSpace(rawInput)
 	if len(trimmedInput) == 0 {
 		return nil, errors.New("no command is given or found")
 	}
 
-	var commands []mars.Command
+	if len(trimmedInput) > maxInstructionCnt {
+		return nil, fmt.Errorf("instruction letters exceed the maximum length: %d", maxInstructionCnt)
+	}
+
+	var commands []engine.Command
 	for i, commandLetter := range trimmedInput {
-		command, ok := mars.CommandFor(commandLetter)
+		command, ok := engine.CommandFor(commandLetter)
 		if !ok {
 			return nil, fmt.Errorf("unsupported command letter: %q at position: %d", commandLetter, i)
 		}

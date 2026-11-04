@@ -1,4 +1,4 @@
-package mars
+package engine
 
 type Mission struct {
 	Plans []RobotPlan
