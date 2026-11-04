@@ -9,14 +9,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/acityonmars/martian-robots/internal/display"
 	engine "github.com/acityonmars/martian-robots/internal/engine"
 	"github.com/acityonmars/martian-robots/internal/parser"
 )
 
 const maxLineBytes int = 1024
 const maxLineNumber int = 1024
-const maxNumberOfRobots = 100
 
 var debug = flag.Bool("debug", false, "enable debug output")
 
@@ -37,25 +35,19 @@ func main() {
 	}
 
 	// Parse input data.
-	worldUpperRight, mission, err := parser.ParseInputData(inputData)
+	world, mission, err := parser.ParseInputData(inputData, logger)
 	if err != nil {
 		logAndExist(err)
 	}
 
-	// Create console display for printing out the result.
-	worldDisplay := display.NewConsoleDisplay(logger)
-	if err = worldDisplay.Init(*worldUpperRight); err != nil {
-		logAndExist(err)
-	}
-
 	// Create rover engine.
-	worldEngine := engine.NewEngine(logger)
-	if err = worldEngine.Init(worldDisplay); err != nil {
+	marsEngine := engine.NewEngine(world, mission, logger)
+	if err != nil {
 		logAndExist(err)
 	}
 
 	// Run the engine.
-	if err = worldEngine.Run(*mission); err != nil {
+	if err = marsEngine.Run(); err != nil {
 		logAndExist(err)
 	}
 }
@@ -79,7 +71,7 @@ func readFileToLines(fileName string) ([]string, error) {
 	defer f.Close()
 
 	fileScanner := bufio.NewScanner(f)
-	fileScanner.Buffer(make([]byte, 0, maxLineBytes), maxLineNumber) // approx. 10MB
+	fileScanner.Buffer(make([]byte, 0, maxLineBytes), maxLineBytes) // approx. 10MB
 	var lines []string
 	for fileScanner.Scan() {
 		line := strings.TrimSpace(fileScanner.Text())

@@ -1,32 +1,43 @@
 package engine
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
-
-	"github.com/acityonmars/martian-robots/internal/display"
-	"github.com/acityonmars/martian-robots/internal/mars"
 )
 
 type Engine struct {
-	logger *slog.Logger
+	world   *World
+	mission *Mission
+	logger  *slog.Logger
 }
 
-func (e Engine) Run(mission mars.Mission) error {
+func (e Engine) Run() error {
 	e.logger.Debug("Run missions")
-	for _, plan := range mission.Plans {
-		if err := plan.Execute(); err != nil {
-			// TODO:
+
+	var errs []error
+	var robots []*Robot
+	for _, plan := range e.mission.Plans {
+		result, err := plan.Execute()
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if result != nil {
+			robots = append(robots, result)
 		}
 	}
 
-	return nil
+	for _, robot := range robots {
+		fmt.Println(robot)
+	}
+
+	return errors.Join(errs...)
 }
 
-func (e Engine) Init(disp display.Display) error {
-	e.logger.Debug("Initialising engine")
-	return nil
-}
-
-func NewEngine(logger *slog.Logger) Engine {
-	return Engine{logger: logger}
+func NewEngine(world *World, mission *Mission, logger *slog.Logger) Engine {
+	return Engine{
+		world:   world,
+		mission: mission,
+		logger:  logger,
+	}
 }
