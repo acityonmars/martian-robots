@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -16,50 +18,57 @@ const maxLineBytes int = 1024
 const maxLineNumber int = 1024
 const maxNumberOfRobots = 100
 
-func main() {
+var debug = flag.Bool("debug", false, "enable debug output")
 
-	// get the file name from argument
+func main() {
+	flag.Parse()
+	logger := newLogger(*debug)
+
+	// Read the input file path from arguments.
 	fileName, err := getInputFileNameFromArgs()
 	if err != nil {
 		logAndExist(err)
 	}
 
-	// read the file into lines
+	// Read raw input data.
 	inputData, err := readFileToLines(fileName)
 	if err != nil {
 		logAndExist(err)
 	}
 
-	// parse the string
-	worldUpperRight, mission, err := parser.ParseMissionData(inputData)
+	// Parse input data.
+	worldUpperRight, mission, err := parser.ParseInputData(inputData)
 	if err != nil {
 		logAndExist(err)
 	}
 
-	worldDisplay := display.NewConsoleDisplay()
+	// Create console display for printing out the result.
+	worldDisplay := display.NewConsoleDisplay(logger)
 	if err = worldDisplay.Init(*worldUpperRight); err != nil {
 		logAndExist(err)
 	}
 
-	worldEngine := engine.NewEngine()
+	// Create rover engine.
+	worldEngine := engine.NewEngine(logger)
 	if err = worldEngine.Init(worldDisplay); err != nil {
 		logAndExist(err)
 	}
 
+	// Run the engine.
 	if err = worldEngine.Run(*mission); err != nil {
 		logAndExist(err)
 	}
 }
 
 func getInputFileNameFromArgs() (string, error) {
-	args := os.Args
+	args := flag.Args()
 
 	argsCnt := len(args)
-	if argsCnt != 2 {
+	if argsCnt != 1 {
 		return "", errors.New("incorrect number of arguments provided")
 	}
 
-	return args[1], nil
+	return args[0], nil
 }
 
 func readFileToLines(fileName string) ([]string, error) {
@@ -87,6 +96,14 @@ func readFileToLines(fileName string) ([]string, error) {
 	}
 
 	return lines, nil
+}
+
+func newLogger(debug bool) *slog.Logger {
+	level := slog.LevelInfo
+	if debug {
+		level = slog.LevelDebug
+	}
+	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
 }
 
 func logAndExist(err error) {

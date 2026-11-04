@@ -1,6 +1,20 @@
 # martian-robots
 Martian robots simulation
 
+## Usage
+
+```sh
+go build -o martian-robots ./cmd/martian-robots
+./martian-robots [-debug] <input-file>
+```
+
+| Flag     | Default | Description         |
+|----------|---------|---------------------|
+| `-debug` | `false` | Enable debug output |
+
+Flags must come before the input file (`./martian-robots -debug input.txt`). Go's `flag` package stops parsing at the first non-flag argument, so `./martian-robots input.txt -debug` is rejected.
+
+Run `./martian-robots -h` to print the usage.
 
 ## Assumptions
 - If input data is invalid, don't use partial data to prevent  a potential misinterpretation of data. (i.e. all or nothing)
