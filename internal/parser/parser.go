@@ -9,10 +9,10 @@ import (
 	"github.com/acityonmars/martian-robots/internal/mars"
 )
 
-type fieldValue int
+type robotFieldValue int
 
 const (
-	XPos fieldValue = iota
+	XPos robotFieldValue = iota
 	YPos
 	RobotOrientation
 )
@@ -20,18 +20,17 @@ const (
 const minInputLineCnt int = 3
 
 // TODO: document - inputdata must have an odd number of lines
-func ParseMissionData(inputData []string) (*mars.Position, *mars.Mission, error) {
+func ParseInputData(inputData []string) (*mars.Position, *mars.Mission, error) {
 	inputDataLineCnt := len(inputData)
 	if inputDataLineCnt < minInputLineCnt || inputDataLineCnt%2 == 0 {
 		return nil, nil, fmt.Errorf("invalid input data with incorrect line cnt: %d", inputDataLineCnt)
 	}
 
-	upperRightPos, err := parseWorldCoordinate(inputData[0]) // TODO: use enum for 0
+	upperRightPos, err := parseWorldCoordinate(inputData[0])
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse world coordinate: %w", err)
 	}
 
-	// TODO: parse mission
 	mission, err := parseMission(inputData[1:])
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse mission data: %w", err)
