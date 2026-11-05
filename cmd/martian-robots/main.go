@@ -79,7 +79,7 @@ func readFileToLines(fileName string) ([]string, error) {
 			continue
 		}
 		lines = append(lines, line)
-		if len(lines) == maxLineNumber {
+		if len(lines) > maxLineNumber {
 			return nil, fmt.Errorf("file %q exceeds %d lines", fileName, maxLineNumber)
 		}
 	}

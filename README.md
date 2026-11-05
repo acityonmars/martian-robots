@@ -24,13 +24,12 @@ Run `./martian-robots -h` to print the usage.
 
 ## Design decisions
 
-- Input data handling: If input data is invalid, fail early. Don't use partial data to prevent a potential
-  misinterpretation of data. (i.e. all or nothing)
-- However, don't stop executing plans if one plan fails. Instead, collect errors for failing plans and continue
-  executing remaining plans.
-- Decouple "display" from "engine". Make "engine" re-usable, and display method flexible.
-- No metrics. Use clean logs over metrics. Consider using metrics if this app becomes a long-running application.
-- No config file. Avoid using config file util this app requires something meaningful configuration. Use cleanly defined
+- Strict input data handling: If input data is invalid, fail immediately. Don't use partial data to prevent a potential
+  misinterpretation of data.
+- Execute all plans: However, don't stop executing plans if one plan fails. Instead, collect errors for failing plans
+  and continue executing remaining plans.
+- No metrics: Use clean logs over metrics. Consider using metrics if this app becomes a long-running application.
+- No config file: Avoid using config file util this app requires something meaningful configuration. Use cleanly defined
   hardcoded values for now.
-- Input data is case-sensitive. This makes parsing simpler.
-- No command is an error. This makes command handling simpler.
+- Case-sensitive input data: Input data is case-sensitive.
+- Treat no command as an error. 
