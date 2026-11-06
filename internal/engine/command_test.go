@@ -21,7 +21,7 @@ func Test_CommandFor_Returns_Command_For_Supported_Letters_Only(t *testing.T) {
 			'F': engine.MoveForward{},
 		}
 		for letter, want := range cases {
-			got, ok := engine.CommandFor(letter)
+			got, ok := engine.GenerateCommandFrom(letter)
 			if !ok || got != want {
 				t.Errorf("CommandFor(%q) = %T, %v; want %T, true", letter, got, ok, want)
 			}
@@ -30,7 +30,7 @@ func Test_CommandFor_Returns_Command_For_Supported_Letters_Only(t *testing.T) {
 
 	t.Run("unknown and lowercase letters are rejected", func(t *testing.T) {
 		for _, letter := range []rune{'X', 'l', ' '} {
-			if _, ok := engine.CommandFor(letter); ok {
+			if _, ok := engine.GenerateCommandFrom(letter); ok {
 				t.Errorf("CommandFor(%q) ok = true, want false", letter)
 			}
 		}

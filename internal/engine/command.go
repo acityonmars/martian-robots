@@ -6,12 +6,14 @@ var commandsByLetter = map[rune]Command{
 	'F': MoveForward{},
 }
 
-func CommandFor(letter rune) (Command, bool) {
+// GenerateCommandFrom returns a Command for the given letter. (e.g. 'L' for TurnLeft command.)
+func GenerateCommandFrom(letter rune) (Command, bool) {
 	cmd, ok := commandsByLetter[letter]
 	return cmd, ok
 }
 
 type Command interface {
+	// ApplyTo applies the command to the robot and the world.
 	ApplyTo(robot *Robot, world *World)
 }
 

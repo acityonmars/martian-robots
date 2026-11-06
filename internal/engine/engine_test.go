@@ -16,7 +16,7 @@ func commands(t *testing.T, letters string) []engine.Command {
 	t.Helper()
 	var cmds []engine.Command
 	for _, letter := range letters {
-		cmd, ok := engine.CommandFor(letter)
+		cmd, ok := engine.GenerateCommandFrom(letter)
 		if !ok {
 			t.Fatalf("unknown command letter %q", letter)
 		}

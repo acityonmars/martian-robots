@@ -190,7 +190,7 @@ func parseCommands(rawInput string) (*[]engine.Command, error) {
 
 	var commands []engine.Command
 	for i, commandLetter := range trimmedInput {
-		command, ok := engine.CommandFor(commandLetter)
+		command, ok := engine.GenerateCommandFrom(commandLetter)
 		if !ok {
 			return nil, fmt.Errorf("unsupported command letter: %q at position: %d", commandLetter, i)
 		}
