@@ -3,6 +3,18 @@
 Take-home project: a stdin→stdout Go CLI simulating robots on a bounded Martian grid. Spec: `REQUIREMENT.md`.
 Quality bar: production-like, but do not over-engineer.
 
+## Priorities (limited time budget)
+
+Focus on major issues and strong fundamentals; skip polishing.
+
+- **Major issues** (raise first): wrong output or spec violations, crashes/panics, wrong exit codes, silent data loss
+  (errors ignored), I/O boundary violations, missing or weak tests on core behavior.
+- **Fundamentals** (worth the time): clear package boundaries, `io.Reader`/`io.Writer` at the edges, errors wrapped with
+  context, golden-file and edge-case tests, documented assumptions and scale limits.
+- **Polishing** (skip unless asked or trivial in passing): naming, comment wording, message phrasing, import aliases,
+  formatting beyond `gofmt`, micro-optimizations.
+- In reviews, list major issues only. Mention minor ones in a single line at most, or not at all.
+
 ## Working style
 
 - Be concise.
