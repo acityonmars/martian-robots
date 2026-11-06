@@ -7,6 +7,11 @@ import (
 	"log/slog"
 )
 
+// Mission is the ordered list of robot plans the engine runs.
+type Mission struct {
+	Plans []RobotPlan
+}
+
 type Engine struct {
 	world   *World
 	mission *Mission
