@@ -6,6 +6,13 @@ import (
 
 type Orientation int
 
+const (
+	North Orientation = iota
+	East
+	South
+	West
+)
+
 func (o Orientation) String() string {
 	switch o {
 	case North:
@@ -21,20 +28,15 @@ func (o Orientation) String() string {
 	}
 }
 
-const (
-	North Orientation = iota
-	East
-	South
-	West
-)
-
 type Position struct {
 	X int
 	Y int
 }
+
+// World represents Mars where robots roam around.
 type World struct {
-	maxX     int
-	maxY     int
+	maxX     int // maximum x coordinate of the world
+	maxY     int // maximum y coordinate of the world
 	scents   map[Position]struct{}
 	robotPos map[int]Position // robot ID -> position
 
@@ -75,11 +77,13 @@ func (w *World) MoveTo(robot *Robot, to Position) {
 	robot.Lost = true
 }
 
+// HasScent checks if "pos" has a scent on it.
 func (w *World) HasScent(pos Position) bool {
 	_, ok := w.scents[pos]
 	return ok
 }
 
+// HasPosition checks if "to" position is inside the world.
 func (w *World) HasPosition(to Position) bool {
 	return to.X >= 0 && to.X <= w.maxX && to.Y >= 0 && to.Y <= w.maxY
 }

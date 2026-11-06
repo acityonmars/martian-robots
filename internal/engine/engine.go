@@ -18,6 +18,8 @@ type Engine struct {
 	logger  *slog.Logger
 }
 
+// Run runs all mission plans, and prints out the result of each robot.
+// Note that each plan is associated with a single robot and a series of commands that belong to the robot.
 func (e Engine) Run(outputDest io.Writer) error {
 	e.logger.Debug("Run missions")
 
@@ -34,6 +36,10 @@ func (e Engine) Run(outputDest io.Writer) error {
 	}
 
 	// Print out the result - the final state of each robot per line.
+	// e.g.
+	// 1 1 E
+	// 3 3 N LOST
+	// 2 3 S
 	for _, robot := range robots {
 		if _, err := fmt.Fprintln(outputDest, robot); err != nil {
 			return fmt.Errorf("write result: %w", err)
