@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,57 +17,80 @@ import (
 const maxLineBytes int = 1024
 const maxLineNumber int = 1024
 
-var debug = flag.Bool("debug", false, "enable debug output")
+const (
+	exitOK    = 0
+	exitError = 1
+)
 
-func cliUsage() {
-	out := flag.CommandLine.Output()
+func main() {
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
+
+func cliUsage(fs *flag.FlagSet) {
+	out := fs.Output()
 	fmt.Fprintln(out, "Usage: martian-robots [-debug] [input-file]")
 	fmt.Fprintln(out, "e.g. ./martian-robots -debug < sample.in")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Read from stdin when input-file is omitted. Press Ctrl+D on an empty line to finish.")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Flags:")
-	flag.PrintDefaults()
+	fs.PrintDefaults()
 }
 
-func main() {
-	flag.Usage = cliUsage
-	flag.Parse()
-	logger := newLogger(*debug)
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	// NOTE: Why local flag set? Each run() call gets fresh flags so tests don't leak state or panic on redefinition.
+	// NOTE: "flag.ContinueOnError": Parse returns errors instead of os.Exit. This is to make run() testable.
+	fs := flag.NewFlagSet("martian-robots", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	debug := fs.Bool("debug", false, "enable debug, verbose logging")
+	fs.Usage = func() { cliUsage(fs) }
+
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
+		}
+		return exitError
+	}
+	logger := newLogger(*debug, stderr)
 
 	// Read input name which could be "" for stdio, or a file name like ./testdata/sample.in.
-	name, err := inputNameFromArgs(flag.Args())
+	name, err := inputNameFromArgs(fs.Args())
 	if err != nil {
-		logAndExist(err)
+		fmt.Fprintln(stderr, err)
+		return exitError
 	}
-	reader, err := openInputIOReader(name, os.Stdin)
+	reader, err := openInputIOReader(name, stdin)
 	if err != nil {
-		logAndExist(err)
+		fmt.Fprintln(stderr, err)
+		return exitError
 	}
 	defer reader.Close()
 
 	// Read raw input data into string slice.
 	inputDataLines, err := readLines(reader)
 	if err != nil {
-		logAndExist(fmt.Errorf("read %s: %w", displayName(name), err))
+		fmt.Fprintln(stderr, fmt.Errorf("read %s: %w", displayName(name), err))
+		return exitError
+
 	}
 
 	// Parse input data, and create world and mission.
 	world, mission, err := parser.ParseInputData(inputDataLines, logger)
 	if err != nil {
-		logAndExist(err)
+		fmt.Fprintln(stderr, err)
+		return exitError
 	}
 
 	// Create rover engine.
 	marsEngine := engine.NewEngine(world, mission, logger)
-	if err != nil {
-		logAndExist(err)
-	}
 
 	// Run the engine.
-	if err = marsEngine.Run(os.Stdout); err != nil {
-		logAndExist(err)
+	if err = marsEngine.Run(stdout); err != nil {
+		fmt.Fprintln(stderr, err)
+		return exitError
 	}
+
+	return exitOK
 }
 
 func displayName(name string) string {
@@ -115,15 +139,10 @@ func readLines(reader io.Reader) ([]string, error) {
 	return lines, nil
 }
 
-func newLogger(debug bool) *slog.Logger {
+func newLogger(debug bool, stderr io.Writer) *slog.Logger {
 	level := slog.LevelInfo
 	if debug {
 		level = slog.LevelDebug
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
-}
-
-func logAndExist(err error) {
-	fmt.Fprintln(os.Stderr, err)
-	os.Exit(1)
+	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{Level: level}))
 }

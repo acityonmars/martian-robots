@@ -110,6 +110,12 @@ func parseMission(missionRawData []string, world *engine.World) (*engine.Mission
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse robot info: %w", err)
 			}
+
+			// Validate if the robot is inside the world.
+			if !world.HasPosition(robot.Pos) {
+				return nil, fmt.Errorf("robot is outside of the world")
+			}
+
 			robot.ID = i / 2
 			robotPlan.Robot = robot
 			robotPlan.World = world
@@ -189,6 +195,9 @@ func parseCommands(rawInput string) (*[]engine.Command, error) {
 			return nil, fmt.Errorf("unsupported command letter: %q at position: %d", commandLetter, i)
 		}
 		commands = append(commands, command)
+		if len(commands) >= maxInstructionCnt {
+			return nil, fmt.Errorf("exceeded the maximum command count: %d", len(commands))
+		}
 	}
 
 	return &commands, nil
