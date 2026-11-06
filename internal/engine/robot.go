@@ -3,7 +3,6 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"io"
 )
 
 type Robot struct {
@@ -11,10 +10,6 @@ type Robot struct {
 	Pos  Position
 	Ori  Orientation // Ori is the direction it faces
 	Lost bool        // Lost indicates if it is a lost robot
-}
-
-func (r Robot) Print(stdout io.Writer) {
-	fmt.Println("test")
 }
 
 func (r Robot) String() string {
