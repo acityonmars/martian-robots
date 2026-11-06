@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Robot represents a single robot
 type Robot struct {
 	ID   int
 	Pos  Position
