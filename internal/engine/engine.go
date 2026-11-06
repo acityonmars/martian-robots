@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 )
 
@@ -12,7 +13,7 @@ type Engine struct {
 	logger  *slog.Logger
 }
 
-func (e Engine) Run() error {
+func (e Engine) Run(outputDest io.Writer) error {
 	e.logger.Debug("Run missions")
 
 	var errs []error
@@ -27,8 +28,11 @@ func (e Engine) Run() error {
 		}
 	}
 
+	// Print out the result - the final state of each robot per line.
 	for _, robot := range robots {
-		fmt.Println(robot)
+		if _, err := fmt.Fprintln(outputDest, robot); err != nil {
+			return fmt.Errorf("write result: %w", err)
+		}
 	}
 
 	return errors.Join(errs...)

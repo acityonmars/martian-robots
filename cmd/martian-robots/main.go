@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -18,24 +18,41 @@ const maxLineNumber int = 1024
 
 var debug = flag.Bool("debug", false, "enable debug output")
 
+func cliUsage() {
+	out := flag.CommandLine.Output()
+	fmt.Fprintln(out, "Usage: martian-robots [-debug] [input-file]")
+	fmt.Fprintln(out, "e.g. ./martian-robots -debug < sample.in")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Read from stdin when input-file is omitted. Press Ctrl+D on an empty line to finish.")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Flags:")
+	flag.PrintDefaults()
+}
+
 func main() {
+	flag.Usage = cliUsage
 	flag.Parse()
 	logger := newLogger(*debug)
 
-	// Read the input file path from arguments.
-	fileName, err := getInputFileNameFromArgs()
+	// Read input name which could be "" for stdio, or a file name like ./testdata/sample.in.
+	name, err := inputNameFromArgs(flag.Args())
 	if err != nil {
 		logAndExist(err)
 	}
-
-	// Read raw input data.
-	inputData, err := readFileToLines(fileName)
+	reader, err := openInputIOReader(name, os.Stdin)
 	if err != nil {
 		logAndExist(err)
 	}
+	defer reader.Close()
 
-	// Parse input data.
-	world, mission, err := parser.ParseInputData(inputData, logger)
+	// Read raw input data into string slice.
+	inputDataLines, err := readLines(reader)
+	if err != nil {
+		logAndExist(fmt.Errorf("read %s: %w", displayName(name), err))
+	}
+
+	// Parse input data, and create world and mission.
+	world, mission, err := parser.ParseInputData(inputDataLines, logger)
 	if err != nil {
 		logAndExist(err)
 	}
@@ -47,44 +64,52 @@ func main() {
 	}
 
 	// Run the engine.
-	if err = marsEngine.Run(); err != nil {
+	if err = marsEngine.Run(os.Stdout); err != nil {
 		logAndExist(err)
 	}
 }
 
-func getInputFileNameFromArgs() (string, error) {
-	args := flag.Args()
-
-	argsCnt := len(args)
-	if argsCnt != 1 {
-		return "", errors.New("incorrect number of arguments provided")
+func displayName(name string) string {
+	if name == "" {
+		return "stdin"
 	}
-
-	return args[0], nil
+	return fmt.Sprintf("%q", name)
 }
 
-func readFileToLines(fileName string) ([]string, error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
+func inputNameFromArgs(args []string) (string, error) {
+	switch len(args) {
+	case 0:
+		return "", nil
+	case 1:
+		return args[0], nil
+	default:
+		return "", fmt.Errorf("expected at most 1 input, got %d arguments", len(args))
 	}
-	defer f.Close()
+}
 
-	fileScanner := bufio.NewScanner(f)
-	fileScanner.Buffer(make([]byte, 0, maxLineBytes), maxLineBytes) // approx. 10MB
+func openInputIOReader(name string, stdin io.Reader) (io.ReadCloser, error) {
+	if name == "" {
+		return io.NopCloser(stdin), nil
+	}
+	return os.Open(name)
+}
+
+func readLines(reader io.Reader) ([]string, error) {
+	fileScanner := bufio.NewScanner(reader)
+	fileScanner.Buffer(make([]byte, 0, maxLineBytes), maxLineBytes) // 1 KB per line
 	var lines []string
-	for fileScanner.Scan() {
+	for lineNumber := 1; fileScanner.Scan(); lineNumber++ {
 		line := strings.TrimSpace(fileScanner.Text())
 		if line == "" {
-			continue
+			return nil, fmt.Errorf("blank line in input at line %d is not accepted", lineNumber)
 		}
 		lines = append(lines, line)
 		if len(lines) > maxLineNumber {
-			return nil, fmt.Errorf("file %q exceeds %d lines", fileName, maxLineNumber)
+			return nil, fmt.Errorf("input exceeds %d lines", maxLineNumber)
 		}
 	}
-	if err = fileScanner.Err(); err != nil {
-		return nil, fmt.Errorf("reading file %q failed: %w", fileName, err)
+	if err := fileScanner.Err(); err != nil {
+		return nil, fmt.Errorf("input scanning failed: %w", err)
 	}
 
 	return lines, nil

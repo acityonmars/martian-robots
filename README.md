@@ -6,21 +6,30 @@ Martian robots simulation
 
 ```sh
 go build -o martian-robots ./cmd/martian-robots
-./martian-robots [-debug] <input-file>
+./martian-robots [-debug] [input-file]
 ```
+
+Input is read from `input-file` if given, otherwise from stdin:
+
+```sh
+./martian-robots < testdata/sample.in          # redirect (primary)
+./martian-robots testdata/sample.in            # file argument
+```
+
+With no input file and no redirect, it reads typed input until Ctrl-D, then prints the results.
+
+Results go to stdout; errors and logs go to stderr.
 
 | Flag     | Default | Description         |
 |----------|---------|---------------------|
 | `-debug` | `false` | Enable debug output |
 
-Flags must come before the input file (`./martian-robots -debug input.txt`). Go's `flag` package stops parsing at the
-first non-flag argument, so `./martian-robots input.txt -debug` is rejected.
-
-Run `./martian-robots -h` to print the usage.
+Flags must come before the input file (`./martian-robots -debug input.txt`). Run `./martian-robots -h` to print the usage.
 
 ## Assumptions
 
 - Robots share a cell. (i.e. No colliding.)
+- Input data must not contain blank (or whitespace-only) lines, including leading or trailing ones.
 
 ## Design decisions
 
@@ -29,7 +38,7 @@ Run `./martian-robots -h` to print the usage.
 - Execute all plans: However, don't stop executing plans if one plan fails. Instead, collect errors for failing plans
   and continue executing remaining plans.
 - No metrics: Use clean logs over metrics. Consider using metrics if this app becomes a long-running application.
-- No config file: Avoid using config file util this app requires something meaningful configuration. Use cleanly defined
+- No config file: Avoid using config file until this app requires something meaningful configuration. Use cleanly defined
   hardcoded values for now.
 - Case-sensitive input data: Input data is case-sensitive.
-- Treat no command as an error. 
+- Treat no command as an error.
