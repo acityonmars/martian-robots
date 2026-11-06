@@ -20,12 +20,14 @@ func (r Robot) String() string {
 	return line
 }
 
+// RobotPlan represents a single robot's commands.
 type RobotPlan struct {
 	Robot    *Robot
 	Commands []Command
 	World    *World
 }
 
+// Execute runs the commands sequentially.
 func (rp RobotPlan) Execute() (*Robot, error) {
 	if rp.Robot == nil {
 		return nil, errors.New("robot isn't set on the plan")

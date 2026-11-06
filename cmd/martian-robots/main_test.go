@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// sampleInput and sampleOutput are the sample from REQUIREMENT.md.
-const sampleInput string = `5 3
+// validSampleInput and validSampleOutput are the sample from REQUIREMENT.md.
+const validSampleInput string = `5 3
 1 1 E
 RFRFRFRF
 3 2 N
@@ -18,7 +18,7 @@ FRRFLLFFRRFLL
 LLFFFLFLFL
 `
 
-const sampleOutput string = `1 1 E
+const validSampleOutput string = `1 1 E
 3 3 N LOST
 2 3 S
 `
@@ -40,13 +40,13 @@ func runCLI(t *testing.T, args []string, stdin string) result {
 
 func Test_Running_CorrectInput_Results_Expected_Output(t *testing.T) {
 	t.Run("Test sample from stdin", func(t *testing.T) {
-		got := runCLI(t, nil, sampleInput)
+		got := runCLI(t, nil, validSampleInput)
 
 		if got.code != exitOK {
 			t.Fatalf("exit code = %d, want %d; stderr: %s", got.code, exitOK, got.stderr)
 		}
-		if got.stdout != sampleOutput {
-			t.Errorf("stdout:\n%s\nwant:\n%s", got.stdout, sampleOutput)
+		if got.stdout != validSampleOutput {
+			t.Errorf("stdout:\n%s\nwant:\n%s", got.stdout, validSampleOutput)
 		}
 	})
 
@@ -56,8 +56,8 @@ func Test_Running_CorrectInput_Results_Expected_Output(t *testing.T) {
 		if got.code != exitOK {
 			t.Fatalf("exit code = %d, want %d; stderr: %s", got.code, exitOK, got.stderr)
 		}
-		if got.stdout != sampleOutput {
-			t.Errorf("stdout:\n%s\nwant:\n%s", got.stdout, sampleOutput)
+		if got.stdout != validSampleOutput {
+			t.Errorf("stdout:\n%s\nwant:\n%s", got.stdout, validSampleOutput)
 		}
 	})
 }
