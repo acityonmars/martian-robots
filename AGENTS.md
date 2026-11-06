@@ -1,7 +1,11 @@
 # AGENTS.md
 
-Take-home project: a stdin→stdout Go CLI simulating robots on a bounded Martian grid. Spec: `REQUIREMENT.md`.
+Take-home project: a stdin→stdout Go CLI simulating robots on a bounded Martian grid.
 Quality bar: production-like, but do not over-engineer.
+
+The original requirements are in [`docs/REQUIREMENT.md`](docs/REQUIREMENT.md). It is the source of truth: read it
+before answering spec questions, and quote it when a rule's exact wording matters (e.g. "less than 100 characters").
+If this file and the spec disagree, the spec wins; point out the mismatch.
 
 ## Priorities (limited time budget)
 
@@ -38,7 +42,7 @@ go run ./cmd/martian-robots < testdata/sample.in
 - `internal/` — domain code. Prefer a named package (e.g. `internal/sim`) over files directly in `internal`.
 - `testdata/` — input/expected-output fixtures (golden files).
 
-## Domain rules (from the spec)
+## Domain rules (summary of `docs/REQUIREMENT.md`)
 
 - Grid is `0,0` to the given upper-right corner; max coordinate is 50; instruction strings are < 100 chars.
 - Orientations N/S/E/W; North is `y+1`. Commands: `L`, `R`, `F`.
