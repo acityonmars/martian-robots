@@ -1,24 +1,70 @@
 # martian-robots
 
-Martian robots simulation
+Martian robots simulation. See [docs/REQUIREMENT.md](docs/REQUIREMENT.md) for the problem statement.
 
 ## Quick Start
 
+Requires Go 1.25 or later.
+
+### Option 1: Install with `go install`
+
+No clone needed:
+
 ```sh
+go install github.com/acityonmars/martian-robots/cmd/martian-robots@latest
+```
+
+The binary is installed to `$(go env GOPATH)/bin` (usually `~/go/bin`). Make sure that directory is on your `PATH`:
+
+```sh
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+
+Then run `martian-robots` instead of `./martian-robots` in the examples below. `go install` doesn't include
+`testdata/`, so copy the sample input below into a file such as `sample.in`.
+
+### Option 2: Clone and build
+
+```sh
+git clone https://github.com/acityonmars/martian-robots.git
+cd martian-robots
 go build -o martian-robots ./cmd/martian-robots
-./martian-robots [-debug] [input-file]
+go test ./...
 ```
 
-Input is read from `input-file` if given, otherwise from stdin:
+### Running
+
+Input can be given by redirect, file argument, or typed input. Note that sample data from the requirement is under `/testdata`.
 
 ```sh
-./martian-robots < testdata/sample.in          # redirect (primary)
-./martian-robots testdata/sample.in            # file argument
+./martian-robots < testdata/sample.in   # redirect
+./martian-robots testdata/sample.in     # file argument
+./martian-robots                        # read typed input until Ctrl+D
 ```
 
-With no input file and no redirect, it reads typed input until Ctrl-D, then prints the results.
+Sample input (`testdata/sample.in`):
+
+```text
+5 3
+1 1 E
+RFRFRFRF
+3 2 N
+FRRFLLFFRRFLL
+0 3 W
+LLFFFLFLFL
+```
+
+Expected output:
+
+```text
+1 1 E
+3 3 N LOST
+2 3 S
+```
 
 Results go to stdout; errors and logs go to stderr.
+
+### Options
 
 | Flag     | Default | Description         |
 |----------|---------|---------------------|
@@ -27,23 +73,61 @@ Results go to stdout; errors and logs go to stderr.
 Flags must come before the input file (`./martian-robots -debug input.txt`). Run `./martian-robots -h` to print the
 usage.
 
+With `-debug`, the raw input and per-robot progress are written to stderr:
+
+```text
+level=DEBUG msg="run robot plans"
+level=DEBUG msg="robot id: 0 apply commands"
+level=DEBUG msg="robot id: 1 apply commands"
+level=DEBUG msg="robot id: 1 LOST"
+level=DEBUG msg="robot id: 2 apply commands"
+level=DEBUG msg="print final robot states"
+```
+
+## Input Limits
+
+| Limit                   | Value                    | Source             |
+|-------------------------|--------------------------|--------------------|
+| Maximum coordinate      | 50                       | Spec               |
+| Instruction length      | Less than 100 characters | Spec               |
+| Robot starting position | Must be on the grid      | Spec         |
+| Input lines             | At most 1024             | Safety bound (CLI) |
+| Line length             | At most 1 KB             | Safety bound (CLI) |
+
+## Project Layout
+
+| Path                 | Responsibility                                     |
+|----------------------|----------------------------------------------------|
+| `cmd/martian-robots` | CLI: flags, input reading, exit codes              |
+| `internal/parser`    | Input parsing and validation                       |
+| `internal/engine`    | World (grid, scent), robots, commands, plan runner |
+
 ## Design Decisions and Assumptions
 
-- Strict input data handling: If input data is invalid, fail immediately. Don't use partial data to prevent a potential
-  misinterpretation of data.
-- Execute all plans: However, don't stop executing plans if one plan fails. Instead, collect errors for failing plans
-  and continue executing remaining plans.
-- No metrics: Use clean logs over metrics. Consider using metrics if this app becomes a long-running application.
-- No config file: Avoid using config file until this app requires something meaningful configuration. Use cleanly
-  defined hardcoded values for now.
-- Case-sensitive input data: Input data is case-sensitive.
-- Treat no command as an error.
-- Robots share a cell. (i.e. No colliding.)
-- Input data must not contain blank (or whitespace-only) lines, including leading or trailing ones.
+- **All-or-nothing parsing:** If any input is invalid, fail before running any robot. Partial data is never used, so
+  it can't be misinterpreted. Input must not contain blank (or whitespace-only) lines, including leading or trailing
+  ones.
+- **Best-effort execution:** Once input is valid, a failing plan doesn't stop the others. Errors are collected and
+  reported after all plans have run.
+- **Case-sensitive input:** Orientations and commands must be uppercase (`N`, `E`, `S`, `W`, `L`, `R`, `F`).
+- **Every robot needs a command line:** A robot position without a following command line is rejected.
+- **Robots may share a cell:** Robots run one after another, so they never collide.
+- **No metrics:** Logs are enough for a short-lived CLI. Consider metrics if this becomes a long-running service.
+- **No config file:** The limits above are hardcoded constants. Add configuration only when something needs to be
+  tuned.
 
-## AI-assisted files
+## Scale and Limitations
 
-These files were mostly generated by Claude Opus 5.5 and reviewed by HJ:
+- **In-memory input:** The whole input is read into memory before parsing. The 1024-line cap keeps this bounded. Very
+  large inputs would need a streaming parser that runs each robot as soon as its two lines are read.
+- **Sequential by design:** Scent makes each robot depend on the robots before it, so plans can't run in parallel
+  without changing behavior. Run time is linear in the total number of instructions, which is trivial at these limits.
+- **Sparse scent storage:** Scents are kept in a `map[Position]struct{}`, so memory grows with the number of lost
+  robots, not with the grid size.
+
+## AI-assisted Files
+
+These files were mostly generated by Claude Opus 5.5 and reviewed by myself:
 
 | File                              | Content                                          |
 |-----------------------------------|--------------------------------------------------|
@@ -54,4 +138,4 @@ These files were mostly generated by Claude Opus 5.5 and reviewed by HJ:
 | `internal/engine/world_test.go`   | Unit tests for `World` (grid bounds, scent)      |
 | `internal/parser/parser_test.go`  | Unit tests for input parsing and validation      |
 
-All other code was written by HJ. AI was used there for review and guidance only.
+All other code was written manually. AI was used there for review and guidance only.

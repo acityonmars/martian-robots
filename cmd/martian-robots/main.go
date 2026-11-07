@@ -26,17 +26,6 @@ func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
-func cliUsage(fs *flag.FlagSet) {
-	out := fs.Output()
-	fmt.Fprintln(out, "Usage: martian-robots [-debug] [input-file]")
-	fmt.Fprintln(out, "e.g. ./martian-robots -debug < sample.in")
-	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Read from stdin when input-file is omitted. Press Ctrl+D on an empty line to finish.")
-	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Flags:")
-	fs.PrintDefaults()
-}
-
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	// NOTE: Why local flag set? Each run() call gets fresh flags so tests don't leak state or panic on redefinition.
 	// NOTE: "flag.ContinueOnError": Parse returns errors instead of os.Exit. This is to make run() testable.
@@ -150,10 +139,22 @@ func newLogger(debug bool, stderr io.Writer) *slog.Logger {
 	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{Level: level}))
 }
 
+// printInputData presents raw input for debugging.
 func printInputData(stderr io.Writer, rawInput []string) {
-	fmt.Fprintln(stderr, "\n== input data")
+	fmt.Fprintln(stderr, "\n-------")
 	for _, line := range rawInput {
 		fmt.Fprintln(stderr, line)
 	}
-	fmt.Fprintln(stderr, "")
+	fmt.Fprintln(stderr, "-------\n")
+}
+
+func cliUsage(fs *flag.FlagSet) {
+	out := fs.Output()
+	fmt.Fprintln(out, "Usage: martian-robots [-debug] [input-file]")
+	fmt.Fprintln(out, "e.g. ./martian-robots -debug < sample.in")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Read from stdin when input-file is omitted. Press Ctrl+D on an empty line to finish.")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Flags:")
+	fs.PrintDefaults()
 }
