@@ -16,12 +16,12 @@ type Engine struct {
 // Run runs all robot plans in order, and prints out the result of each robot.
 // Note that each plan is associated with a single robot and a series of commands that belong to the robot.
 func (e Engine) Run(outputDest io.Writer) error {
-	e.logger.Debug("Run robot plans")
+	e.logger.Debug("run robot plans")
 
 	var errs []error
 	var robots []*Robot
 	for _, plan := range e.robotPlans {
-		result, err := plan.Execute()
+		result, err := plan.Execute(e.logger)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -35,6 +35,7 @@ func (e Engine) Run(outputDest io.Writer) error {
 	// 1 1 E
 	// 3 3 N LOST
 	// 2 3 S
+	e.logger.Debug("print final robot states")
 	for _, robot := range robots {
 		if _, err := fmt.Fprintln(outputDest, robot); err != nil {
 			return fmt.Errorf("write result: %w", err)

@@ -71,7 +71,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintln(stderr, fmt.Errorf("read %s: %w", displayName(name), err))
 		return exitError
+	}
 
+	if *debug {
+		printInputData(stderr, inputDataLines)
 	}
 
 	// Parse input data, and create world and robot plans.
@@ -145,4 +148,12 @@ func newLogger(debug bool, stderr io.Writer) *slog.Logger {
 		level = slog.LevelDebug
 	}
 	return slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{Level: level}))
+}
+
+func printInputData(stderr io.Writer, rawInput []string) {
+	fmt.Fprintln(stderr, "\n== input data")
+	for _, line := range rawInput {
+		fmt.Fprintln(stderr, line)
+	}
+	fmt.Fprintln(stderr, "")
 }
