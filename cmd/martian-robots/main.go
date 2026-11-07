@@ -74,15 +74,15 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 	}
 
-	// Parse input data, and create world and mission.
-	world, mission, err := parser.ParseInputData(inputDataLines, logger)
+	// Parse input data, and create world and robot plans.
+	world, robotPlans, err := parser.ParseInputData(inputDataLines, logger)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return exitError
 	}
 
 	// Create rover engine.
-	marsEngine := engine.NewEngine(world, mission, logger)
+	marsEngine := engine.NewEngine(world, robotPlans, logger)
 
 	// Run the engine.
 	if err = marsEngine.Run(stdout); err != nil {

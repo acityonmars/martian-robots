@@ -26,7 +26,7 @@ func commands(t *testing.T, letters string) []engine.Command {
 }
 
 func newTestEngine(world *engine.World, plans ...engine.RobotPlan) engine.Engine {
-	return engine.NewEngine(world, &engine.Mission{Plans: plans}, slog.New(slog.DiscardHandler))
+	return engine.NewEngine(world, plans, slog.New(slog.DiscardHandler))
 }
 
 func Test_Run_Prints_One_Line_Per_Robot_And_Scent_Saves_Later_Robot(t *testing.T) {

@@ -22,7 +22,7 @@ func Test_ParseInputData_Builds_World_And_Plans_From_Valid_Input(t *testing.T) {
 		"FRRFLLFFRRFLL",
 	}
 
-	world, mission, err := parser.ParseInputData(input, discardLogger)
+	world, robotPlans, err := parser.ParseInputData(input, discardLogger)
 	if err != nil {
 		t.Fatalf("ParseInputData() error = %v", err)
 	}
@@ -37,7 +37,7 @@ func Test_ParseInputData_Builds_World_And_Plans_From_Valid_Input(t *testing.T) {
 	})
 
 	t.Run("one plan per robot, in input order", func(t *testing.T) {
-		if got, want := len(mission.Plans), 2; got != want {
+		if got, want := len(robotPlans), 2; got != want {
 			t.Fatalf("plans = %d, want %d", got, want)
 		}
 		cases := []struct {
@@ -48,7 +48,7 @@ func Test_ParseInputData_Builds_World_And_Plans_From_Valid_Input(t *testing.T) {
 			{"3 2 N", 13},
 		}
 		for i, want := range cases {
-			plan := mission.Plans[i]
+			plan := robotPlans[i]
 			if got := plan.Robot.String(); got != want.robot {
 				t.Errorf("plan %d robot = %q, want %q", i, got, want.robot)
 			}

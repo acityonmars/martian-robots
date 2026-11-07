@@ -7,25 +7,20 @@ import (
 	"log/slog"
 )
 
-// Mission is the ordered list of robot plans the engine runs.
-type Mission struct {
-	Plans []RobotPlan
-}
-
 type Engine struct {
-	world   *World
-	mission *Mission
-	logger  *slog.Logger
+	world      *World
+	robotPlans []RobotPlan // executed in order
+	logger     *slog.Logger
 }
 
-// Run runs all mission plans, and prints out the result of each robot.
+// Run runs all robot plans in order, and prints out the result of each robot.
 // Note that each plan is associated with a single robot and a series of commands that belong to the robot.
 func (e Engine) Run(outputDest io.Writer) error {
-	e.logger.Debug("Run missions")
+	e.logger.Debug("Run robot plans")
 
 	var errs []error
 	var robots []*Robot
-	for _, plan := range e.mission.Plans {
+	for _, plan := range e.robotPlans {
 		result, err := plan.Execute()
 		if err != nil {
 			errs = append(errs, err)
@@ -49,10 +44,10 @@ func (e Engine) Run(outputDest io.Writer) error {
 	return errors.Join(errs...)
 }
 
-func NewEngine(world *World, mission *Mission, logger *slog.Logger) Engine {
+func NewEngine(world *World, robotPlans []RobotPlan, logger *slog.Logger) Engine {
 	return Engine{
-		world:   world,
-		mission: mission,
-		logger:  logger,
+		world:      world,
+		robotPlans: robotPlans,
+		logger:     logger,
 	}
 }

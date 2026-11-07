@@ -27,8 +27,8 @@ const minInputLineCnt int = 3
 // maxInstructionCnt is the maximum number of instructions letters.
 const maxInstructionCnt int = 100
 
-// ParseInputData parses input data in a string slice, and returns mars.World and mars.Mission.
-func ParseInputData(inputData []string, logger *slog.Logger) (*engine.World, *engine.Mission, error) {
+// ParseInputData parses input data in a string slice, and returns the world and the ordered robot plans.
+func ParseInputData(inputData []string, logger *slog.Logger) (*engine.World, []engine.RobotPlan, error) {
 	inputDataLineCnt := len(inputData)
 	if inputDataLineCnt < minInputLineCnt || inputDataLineCnt%2 == 0 {
 		return nil, nil, fmt.Errorf("invalid input data with incorrect line cnt: %d", inputDataLineCnt)
@@ -41,12 +41,12 @@ func ParseInputData(inputData []string, logger *slog.Logger) (*engine.World, *en
 
 	world := engine.NewWorld(*upperRightPos, logger)
 
-	mission, err := parseMission(inputData[1:], world)
+	robotPlans, err := parseRobotPlans(inputData[1:], world)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse mission data: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse robot plans: %w", err)
 	}
 
-	return world, mission, nil
+	return world, robotPlans, nil
 }
 
 func parseWorldCoordinate(coordinate string) (*engine.Position, error) {
@@ -87,7 +87,7 @@ func parseNumString(strNum string) (int, error) {
 	return num, nil
 }
 
-// parseMission parses raw mission data to mars.Mission.
+// parseRobotPlans parses raw robot plan data to an ordered slice of engine.RobotPlan.
 //
 // Raw data example:
 //
@@ -95,15 +95,15 @@ func parseNumString(strNum string) (int, error) {
 //	RFRFRFRF
 //	3 2 N
 //	FRRFLLFFRRFLL
-func parseMission(missionRawData []string, world *engine.World) (*engine.Mission, error) {
-	missionLineCnt := len(missionRawData)
-	if missionLineCnt%2 != 0 {
-		return nil, fmt.Errorf("incorrect line number for raw mission data: %d", missionLineCnt)
+func parseRobotPlans(rawData []string, world *engine.World) ([]engine.RobotPlan, error) {
+	lineCnt := len(rawData)
+	if lineCnt%2 != 0 {
+		return nil, fmt.Errorf("incorrect line number for raw robot plan data: %d", lineCnt)
 	}
 
-	mission := engine.Mission{}
+	robotPlans := make([]engine.RobotPlan, 0, lineCnt/2)
 	robotPlan := engine.RobotPlan{}
-	for i, line := range missionRawData {
+	for i, line := range rawData {
 		// Odd line is for robot input. (e.g. "1 1 E")
 		if i%2 == 0 {
 			robot, err := parseRobot(line)
@@ -126,11 +126,11 @@ func parseMission(missionRawData []string, world *engine.World) (*engine.Mission
 				return nil, fmt.Errorf("failed to parse commands: %w", err)
 			}
 			robotPlan.Commands = *commands
-			mission.Plans = append(mission.Plans, robotPlan)
+			robotPlans = append(robotPlans, robotPlan)
 		}
 	}
 
-	return &mission, nil
+	return robotPlans, nil
 }
 
 func parseRobot(rawRobotInfo string) (*engine.Robot, error) {
