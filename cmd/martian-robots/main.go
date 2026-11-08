@@ -141,11 +141,11 @@ func newLogger(debug bool, stderr io.Writer) *slog.Logger {
 
 // printInputData presents raw input for debugging.
 func printInputData(stderr io.Writer, rawInput []string) {
-	fmt.Fprintln(stderr, "\n-------")
+	fmt.Fprintln(stderr, "-------")
 	for _, line := range rawInput {
 		fmt.Fprintln(stderr, line)
 	}
-	fmt.Fprintln(stderr, "-------\n")
+	fmt.Fprintln(stderr, "-------")
 }
 
 func cliUsage(fs *flag.FlagSet) {

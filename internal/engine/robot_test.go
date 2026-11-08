@@ -3,6 +3,7 @@
 package engine_test
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/acityonmars/martian-robots/internal/engine"
@@ -31,7 +32,7 @@ func Test_Execute_Applies_Commands_In_Order(t *testing.T) {
 		World:    newTestWorld(engine.Position{X: 5, Y: 3}),
 	}
 
-	robot, err := plan.Execute()
+	robot, err := plan.Execute(slog.New(slog.DiscardHandler))
 
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
@@ -48,7 +49,7 @@ func Test_Execute_Stops_Applying_Commands_Once_Robot_Is_Lost(t *testing.T) {
 		World:    newTestWorld(engine.Position{X: 5, Y: 3}),
 	}
 
-	robot, err := plan.Execute()
+	robot, err := plan.Execute(slog.New(slog.DiscardHandler))
 
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
@@ -63,14 +64,16 @@ func Test_Execute_Fails_When_Plan_Is_Incomplete(t *testing.T) {
 	world := newTestWorld(engine.Position{X: 5, Y: 3})
 	robot := &engine.Robot{Pos: engine.Position{X: 1, Y: 1}, Ori: engine.North}
 
+	logger := slog.New(slog.DiscardHandler)
+
 	t.Run("no robot", func(t *testing.T) {
-		if _, err := (engine.RobotPlan{World: world}).Execute(); err == nil {
+		if _, err := (engine.RobotPlan{World: world}).Execute(logger); err == nil {
 			t.Error("Execute() error = nil, want error")
 		}
 	})
 
 	t.Run("no world", func(t *testing.T) {
-		if _, err := (engine.RobotPlan{Robot: robot}).Execute(); err == nil {
+		if _, err := (engine.RobotPlan{Robot: robot}).Execute(logger); err == nil {
 			t.Error("Execute() error = nil, want error")
 		}
 	})

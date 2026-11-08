@@ -36,7 +36,6 @@ func (e Engine) Run(outputDest io.Writer) error {
 	// 3 3 N LOST
 	// 2 3 S
 	e.logger.Debug("print final robot states")
-	fmt.Fprintln(outputDest, "")
 	for _, robot := range robots {
 		if _, err := fmt.Fprintln(outputDest, robot); err != nil {
 			return fmt.Errorf("write result: %w", err)
